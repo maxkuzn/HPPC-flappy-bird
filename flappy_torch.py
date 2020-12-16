@@ -13,58 +13,80 @@ SCREENHEIGHT = 512.0
 PIPEGAPSIZE  = 100
 BASEY        = SCREENHEIGHT * 0.79
 
-def np_sigmoid(x):
-    return 1/(1+np.exp(-x))
 
-class np_mlp(object):
-    def __init__(self, n_objects = 50, in_dim = 3, mid_dim = 7, out_dim = 1):
-        self.W1 = np.random.uniform(-1,1, size = (n_objects, mid_dim, in_dim))*np.sqrt(6/(in_dim+mid_dim))
-#         self.b1 = np.random.uniform(-1,1, size=(n_objects, mid_dim))*np.sqrt(in_dim+mid_dim)
-        self.b1 = np.zeros((n_objects, mid_dim))
-        if out_dim == 1:
-            self.W2 = np.random.uniform(-1,1, size=(n_objects, mid_dim))*np.sqrt(6/(mid_dim+out_dim))
-#             self.b2 = np.random.uniform(-1,1, size=n_objects)*np.sqrt(mid_dim+out_dim)
-            self.b2 = np.zeros(n_objects)
-        else:
-            raise NotImplemented
-        
-    def predict(self,x):
-        y = np_sigmoid((self.W1@x[:,:,None]).T[0].T + self.b1)
-        return np_sigmoid(np.sum(self.W2*y, axis = 1) + self.b2)
+import torch
+import torch.nn as nn
+class Net(nn.Module):
+
+    def __init__(self, n_objects=50, in_dim = 3, mid_dim = 7, out_dim = 1):
+        super(Net, self).__init__()
+        # 1 input image channel, 6 output channels, 3x3 square convolution
+        # kernel
+        self.n_objects=n_objects
+        self.dict_models=dict()
+
+        for ind_model in range(n_objects):
+          self.dict_models[ind_model]=dict()
+          self.dict_models[ind_model]['fc1']=nn.Linear(in_dim, mid_dim)
+          self.dict_models[ind_model]['fc2']=nn.Linear(mid_dim, mid_dim)
+          self.dict_models[ind_model]['fc3']=nn.Linear(mid_dim, out_dim)
+      
+        self.sigmoid = nn.Sigmoid() 
+    def forward(self, x):
+        # Max pooling over a (2, 2) window
+        res=torch.zeros(self.n_objects)
+        for ind_model in range(self.n_objects):
+          y=self.dict_models[ind_model]['fc1'](x[ind_model,:])
+          y=self.sigmoid(self.dict_models[ind_model]['fc2'](y))
+          res[ind_model]=self.sigmoid(self.dict_models[ind_model]['fc3'](y))
+
+        return res
 
 
 def init_pool():
     TOTAL_MODELS = 50
-    LOAD_SAVED_POOL = True
-
-    pool = {'model': np_mlp(n_objects = TOTAL_MODELS),
+    LOAD_SAVED_POOL = False
+    net_dict=dict()
+    
+    pool = {'model': Net(n_objects = TOTAL_MODELS),
             'fitness': -100*np.ones(TOTAL_MODELS),
              'len': TOTAL_MODELS}
     # Initialize all models
     if LOAD_SAVED_POOL:
-        
-        pool['model'].W1 = np.load('Current_Model_Pool/W1.npy')
-        pool['model'].W2 = np.load('Current_Model_Pool/W2.npy')
-        pool['model'].b1 = np.load('Current_Model_Pool/b1.npy')
-        pool['model'].b2 = np.load('Current_Model_Pool/b2.npy')
-        
+        for ind_model in range(TOTAL_MODELS):
+            pool['model'].dict_models[ind_model]['fc1'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W1.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc2'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W2.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc3'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W3.npy'.format(ind_model)))
+            
+            pool['model'].dict_models[ind_model]['fc1'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b1.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc2'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b2.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc3'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b3.npy'.format(ind_model)))
+
 
     return pool
 
 
 def save_pool(pool):
-    np.save('Current_Model_Pool/W1.npy',pool['model'].W1)
-    np.save('Current_Model_Pool/W2.npy',pool['model'].W2)
-    np.save('Current_Model_Pool/b1.npy',pool['model'].b1)
-    np.save('Current_Model_Pool/b2.npy',pool['model'].b2)
-    print("Saved current pool!")
+    for ind_model in range(pool['len']):
+        np.save('Current_Model_Pool/{}model_W1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].weight.detach().numpy())
+        np.save('Current_Model_Pool/{}model_W2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].weight.detach().numpy())
+        np.save('Current_Model_Pool/{}model_W3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].weight.detach().numpy())
+        np.save('Current_Model_Pool/{}model_b1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].bias.detach().numpy())
+        np.save('Current_Model_Pool/{}model_b2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].bias.detach().numpy())
+        np.save('Current_Model_Pool/{}model_b3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].bias.detach().numpy())
+
+
+        print("Saved current pool!")
 
 
 def model_crossover(pool, model_id1, model_id2):
-    
-    weights1 = pool['model'].W1[model_id1]
-    weights2 = pool['model'].W1[model_id2]
-  
+    #weights of a 
+    #pool['model'].dict_models[model_id1]['fc1'].weight
+    weights1 = pool['model'].dict_models[model_id1]['fc1'].weight
+    weights1 = weights1.detach().numpy()
+    weights2 = pool['model'].dict_models[model_id2]['fc1'].weight
+    weights2=weights2.detach().numpy()
+
     
     return np.asarray([weights2, weights1])
 
@@ -82,9 +104,11 @@ def predict_action(pool, height, dist, pipe_height):
     height = np.minimum(SCREENHEIGHT, height) / SCREENHEIGHT - 0.5
     dist = dist / 450 - 0.5 # Max pipe distance from player will be 450
     pipe_height = min(SCREENHEIGHT, pipe_height) / SCREENHEIGHT - 0.5
-    neural_input = np.tile([0, dist, pipe_height], (len(height),1))
+    neural_input = np.tile(torch.tensor([0, dist, pipe_height]), (len(height),1))
     neural_input[:,0] = height
-    output_prob = pool['model'].predict(neural_input)
+    #output_prob = .predict(neural_input)
+    output_prob=pool['model'].forward(torch.tensor(neural_input))
+
     # Perform the jump action
     return output_prob <= 0.5
 
@@ -344,8 +368,9 @@ def finalize(pool):
     for _ in range(pool['len'] // 2):
         parent1 = random.uniform(0, 1)
         parent2 = random.uniform(0, 1)
-        idx1 = -1
-        idx2 = -1
+        idx1 = pool['len']-1
+        idx2 = pool['len']-1
+        #choosing best
         for idxx in range(pool['len']):
             if fitness[idxx] >= parent1:
                 idx1 = idxx
@@ -355,44 +380,28 @@ def finalize(pool):
                 idx2 = idxx
                 break
         new_weights1 = model_crossover(pool, idx1, idx2)
-        updated_W1_1 = model_mutate(new_weights1[0])
-        updated_W1_2 = model_mutate(new_weights1[1])
-        new_weights.append(updated_W1_1)
-        new_weights.append(updated_W1_2)
+        updated_weights1 = model_mutate(new_weights1[0])
+        updated_weights2 = model_mutate(new_weights1[1])
+        new_weights.append(updated_weights1)
+        new_weights.append(updated_weights2)
     for idx in range(len(new_weights)):
         pool['fitness'][idx] = -100
-        pool['model'].W1[idx] = new_weights[idx]
-        pool['model'].W2[idx] = model_mutate(pool['model'].W2[idx])
-        pool['model'].b1[idx] = model_mutate(pool['model'].b1[idx])
-        pool['model'].b2[idx] = model_mutate(pool['model'].b2[idx])
+        #change weights: pool['model'].W1[idx] = new_weights[idx]
+        pool['model'].dict_models[idx]['fc1'].weight.data=torch.tensor(new_weights[idx])
+        
 
-import argparse
+        
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Script to run flappy bird')
-    parser.add_argument('-n', '--n_loops', type=int,
-                        default=1,
-                        help='number of training loops')
-    
-    parser.add_argument('-b', '--backend', type=str,
-                        default='numpy',
-                        choices=['numpy','cupy'],
-                        help='what backend to use CPU/GPU')
-
-    return parser.parse_args()
 
 def main():
-    args = parse_args()
-    n = args.n_loops
-    for _ in range(n):
-        env = init_pygame()
-        pool = init_pool()
-        env['SAVE_POOL'] = True
+    env = init_pygame()
+    pool = init_pool()
+    env['SAVE_POOL'] = True
 
-        mainGame(env, pool)
-        finalize(pool)
-        if env['SAVE_POOL']:
-            save_pool(pool)
+    mainGame(env, pool)
+    finalize(pool)
+    if env['SAVE_POOL']:
+        save_pool(pool)
 
 
 def getRandomPipe(env):
@@ -490,6 +499,6 @@ def getHitmask(image):
             mask[x].append(bool(image.get_at((x,y))[3]))
     return mask
 
+
 if __name__ == '__main__':
     main()
-
