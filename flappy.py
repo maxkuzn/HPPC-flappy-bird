@@ -371,6 +371,10 @@ def parse_args():
     parser.add_argument('-v', '--visualize',
                         action='store_true',
                         help='Vizualize work')
+
+    parser.add_argument('-p', '--progress-bar',
+                        action='store_true',
+                        help='Vizualize work')
     return parser.parse_args()
 
 def main():
@@ -381,7 +385,12 @@ def main():
     env['SAVE_POOL'] = args.save
     pool = init_pool(args.load)
 
-    for _ in range(n):
+    if args.progress_bar:
+        from tqdm import tqdm
+        r = tqdm(range(n))
+    else:
+        r = range(n)
+    for _ in r:
         mainGame(env, pool)
         finalize(pool)
 
