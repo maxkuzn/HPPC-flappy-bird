@@ -6,7 +6,27 @@ import argparse
 import pygame
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
 
-from flappy_torch import *
+from flappy_numpy import init_pool as numpy_init_pool
+from flappy_numpy import save_pool as numpy_save_pool
+from flappy_numpy import model_crossover as numpy_model_crossover
+from flappy_numpy import model_mutate as numpy_model_mutate
+from flappy_numpy import change_weights as numpy_change_weights
+from flappy_numpy import predict_action as numpy_predict_action
+
+from flappy_torch import init_pool as torch_init_pool
+from flappy_torch import save_pool as torch_save_pool
+from flappy_torch import model_crossover as torch_model_crossover
+from flappy_torch import model_mutate as torch_model_mutate
+from flappy_torch import change_weights as torch_change_weights
+from flappy_torch import predict_action as torch_predict_action
+
+init_pool = None
+save_pool = None
+model_crossover = None
+model_mutate = None
+change_weights = None
+predict_action = None
+
 
 
 FPS = 30
@@ -14,6 +34,29 @@ SCREENWIDTH  = 288.0
 SCREENHEIGHT = 512.0
 PIPEGAPSIZE  = 100
 BASEY        = SCREENHEIGHT * 0.79
+
+
+def init_backend(backend):
+    global init_pool, save_pool, model_crossover, model_mutate, change_weights, predict_action
+    if backend == 'numpy':
+        init_pool = numpy_init_pool
+        save_pool = numpy_save_pool
+        model_crossover = numpy_model_crossover
+        model_mutate = numpy_model_mutate
+        change_weights = numpy_change_weights
+        predict_action = numpy_predict_action
+    elif backend == 'cupy':
+        raise Exception(f'"{backend}" backend not implemented')
+    elif backend == 'torch':
+        init_pool = torch_init_pool
+        save_pool = torch_save_pool
+        model_crossover = torch_model_crossover
+        model_mutate = torch_model_mutate
+        change_weights = torch_change_weights
+        predict_action = torch_predict_action
+    else:
+        raise Exception(f'Unknown backend "{backend}"')
+    print(f'Loaded backend "{backend}"')
 
 
 def load_image(path, alpha=True, rotate=None):
@@ -299,13 +342,14 @@ def parse_args():
 
     parser.add_argument('-b', '--backend', type=str,
                         default='numpy',
-                        choices=['numpy','cupy'],
+                        choices=['numpy', 'cupy', 'torch'],
                         help='what backend to use CPU/GPU')
 
     return parser.parse_args()
 
 def main():
     args = parse_args()
+    init_backend(args.backend)
     n = args.n_loops
     for _ in range(n):
         env = init_pygame()
