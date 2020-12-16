@@ -72,13 +72,14 @@ def load_image(path, alpha=True, rotate=None):
     return properties
 
 
-def init_pygame():
+def init_pygame(use_pygame):
     env = {}
-    env['USE_PYGAME'] = True
     pygame.init()
-    env['clock'] = pygame.time.Clock()
+    env['USE_PYGAME'] = use_pygame
     env['screen'] = pygame.display.set_mode((int(SCREENWIDTH), int(SCREENHEIGHT)))
-    pygame.display.set_caption('Flappy Bird')
+    if env['USE_PYGAME']:
+        env['clock'] = pygame.time.Clock()
+        pygame.display.set_caption('Flappy Bird')
 
     env['numbers'] = []
     for i in range(10):
@@ -136,6 +137,8 @@ def init_pygame():
 def draw_frame(env, pool, score,
                upperPipes, lowerPipes,
                playerIndex, playersXList, playersYList, playersState):
+    if not env['USE_PYGAME']:
+        return
     # draw sprites
     env['screen'].blit(env['background']['image'], (0,0))
 
@@ -228,10 +231,11 @@ def mainGame(env, pool):
                 playerHeight = env['player'][playerIndex]['height']
                 playersYList[idx] += min(playersVelY[idx], BASEY - playersYList[idx] - playerHeight)
 
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
+        if env['USE_PYGAME']:
+            for event in pygame.event.get():
+                if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                    pygame.quit()
+                    sys.exit()
 
         # check for crash here, returns status list
         crashTest = checkCrash(
@@ -363,13 +367,17 @@ def parse_args():
     parser.add_argument('-l', '--load', type=str2bool,
                         default=True,
                         help='Load saved weights or not')
+
+    parser.add_argument('-v', '--visualize',
+                        action='store_true',
+                        help='Vizualize work')
     return parser.parse_args()
 
 def main():
     args = parse_args()
     init_backend(args.backend)
     n = args.n_loops
-    env = init_pygame()
+    env = init_pygame(args.visualize)
     env['SAVE_POOL'] = args.save
     pool = init_pool(args.load)
 
