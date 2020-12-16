@@ -30,8 +30,8 @@ class Net(nn.Module):
           self.dict_models[ind_model]['fc1']=nn.Linear(in_dim, mid_dim)
           self.dict_models[ind_model]['fc2']=nn.Linear(mid_dim, mid_dim)
           self.dict_models[ind_model]['fc3']=nn.Linear(mid_dim, out_dim)
-      
-        self.sigmoid = nn.Sigmoid() 
+
+        self.sigmoid = nn.Sigmoid()
     def forward(self, x):
         # Max pooling over a (2, 2) window
         res=torch.zeros(self.n_objects)
@@ -45,22 +45,22 @@ class Net(nn.Module):
 
 def init_pool():
     TOTAL_MODELS = 50
-    LOAD_SAVED_POOL = False
+    LOAD_SAVED_POOL = True
     net_dict=dict()
-    
+
     pool = {'model': Net(n_objects = TOTAL_MODELS),
             'fitness': -100*np.ones(TOTAL_MODELS),
              'len': TOTAL_MODELS}
     # Initialize all models
     if LOAD_SAVED_POOL:
         for ind_model in range(TOTAL_MODELS):
-            pool['model'].dict_models[ind_model]['fc1'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W1.npy'.format(ind_model)))
-            pool['model'].dict_models[ind_model]['fc2'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W2.npy'.format(ind_model)))
-            pool['model'].dict_models[ind_model]['fc3'].weight.data=torch.tensor(np.load('Current_Model_Pool/{}model_W3.npy'.format(ind_model)))
-            
-            pool['model'].dict_models[ind_model]['fc1'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b1.npy'.format(ind_model)))
-            pool['model'].dict_models[ind_model]['fc2'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b2.npy'.format(ind_model)))
-            pool['model'].dict_models[ind_model]['fc3'].bias.data=torch.tensor(np.load('Current_Model_Pool/{}model_b3.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc1'].weight.data=torch.tensor(np.load('saved_model_pool_torch/{}model_W1.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc2'].weight.data=torch.tensor(np.load('saved_model_pool_torch/{}model_W2.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc3'].weight.data=torch.tensor(np.load('saved_model_pool_torch/{}model_W3.npy'.format(ind_model)))
+
+            pool['model'].dict_models[ind_model]['fc1'].bias.data=torch.tensor(np.load('saved_model_pool_torch/{}model_b1.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc2'].bias.data=torch.tensor(np.load('saved_model_pool_torch/{}model_b2.npy'.format(ind_model)))
+            pool['model'].dict_models[ind_model]['fc3'].bias.data=torch.tensor(np.load('saved_model_pool_torch/{}model_b3.npy'.format(ind_model)))
 
 
     return pool
@@ -68,33 +68,33 @@ def init_pool():
 
 def save_pool(pool):
     for ind_model in range(pool['len']):
-        np.save('Current_Model_Pool/{}model_W1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].weight.detach().numpy())
-        np.save('Current_Model_Pool/{}model_W2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].weight.detach().numpy())
-        np.save('Current_Model_Pool/{}model_W3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].weight.detach().numpy())
-        np.save('Current_Model_Pool/{}model_b1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].bias.detach().numpy())
-        np.save('Current_Model_Pool/{}model_b2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].bias.detach().numpy())
-        np.save('Current_Model_Pool/{}model_b3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].bias.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_W1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].weight.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_W2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].weight.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_W3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].weight.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_b1.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc1'].bias.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_b2.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc2'].bias.detach().numpy())
+        np.save('saved_model_pool_torch/{}model_b3.npy'.format(ind_model),pool['model'].dict_models[ind_model]['fc3'].bias.detach().numpy())
 
 
         print("Saved current pool!")
 
 
 def model_crossover(pool, model_id1, model_id2):
-    #weights of a 
+    #weights of a
     #pool['model'].dict_models[model_id1]['fc1'].weight
     weights1 = pool['model'].dict_models[model_id1]['fc1'].weight
     weights1 = weights1.detach().numpy()
     weights2 = pool['model'].dict_models[model_id2]['fc1'].weight
     weights2=weights2.detach().numpy()
 
-    
+
     return np.asarray([weights2, weights1])
 
 
 def model_mutate(weights):
     change = np.random.uniform(-0.5,0.5, weights.shape)
     cond = np.random.uniform(0,1, weights.shape)
-    
+
     return np.where(cond>0.85, weights + change, weights)
 
 
@@ -388,9 +388,9 @@ def finalize(pool):
         pool['fitness'][idx] = -100
         #change weights: pool['model'].W1[idx] = new_weights[idx]
         pool['model'].dict_models[idx]['fc1'].weight.data=torch.tensor(new_weights[idx])
-        
 
-        
+
+
 
 
 def main():
