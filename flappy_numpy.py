@@ -27,7 +27,7 @@ class np_mlp(object):
             self.b2 = np.zeros(n_objects)
         else:
             raise NotImplemented
-        
+
     def predict(self,x):
         y = np_sigmoid((self.W1@x[:,:,None]).T[0].T + self.b1)
         return np_sigmoid(np.sum(self.W2*y, axis = 1) + self.b2)
@@ -42,37 +42,37 @@ def init_pool():
              'len': TOTAL_MODELS}
     # Initialize all models
     if LOAD_SAVED_POOL:
-        
-        pool['model'].W1 = np.load('Current_Model_Pool/W1.npy')
-        pool['model'].W2 = np.load('Current_Model_Pool/W2.npy')
-        pool['model'].b1 = np.load('Current_Model_Pool/b1.npy')
-        pool['model'].b2 = np.load('Current_Model_Pool/b2.npy')
-        
+
+        pool['model'].W1 = np.load('saved_model_pool_numpy/W1.npy')
+        pool['model'].W2 = np.load('saved_model_pool_numpy/W2.npy')
+        pool['model'].b1 = np.load('saved_model_pool_numpy/b1.npy')
+        pool['model'].b2 = np.load('saved_model_pool_numpy/b2.npy')
+
 
     return pool
 
 
 def save_pool(pool):
-    np.save('Current_Model_Pool/W1.npy',pool['model'].W1)
-    np.save('Current_Model_Pool/W2.npy',pool['model'].W2)
-    np.save('Current_Model_Pool/b1.npy',pool['model'].b1)
-    np.save('Current_Model_Pool/b2.npy',pool['model'].b2)
+    np.save('saved_model_pool_numpy/W1.npy',pool['model'].W1)
+    np.save('saved_model_pool_numpy/W2.npy',pool['model'].W2)
+    np.save('saved_model_pool_numpy/b1.npy',pool['model'].b1)
+    np.save('saved_model_pool_numpy/b2.npy',pool['model'].b2)
     print("Saved current pool!")
 
 
 def model_crossover(pool, model_id1, model_id2):
-    
+
     weights1 = pool['model'].W1[model_id1]
     weights2 = pool['model'].W1[model_id2]
-  
-    
+
+
     return np.asarray([weights2, weights1])
 
 
 def model_mutate(weights):
     change = np.random.uniform(-0.5,0.5, weights.shape)
     cond = np.random.uniform(0,1, weights.shape)
-    
+
     return np.where(cond>0.85, weights + change, weights)
 
 
@@ -373,7 +373,7 @@ def parse_args():
     parser.add_argument('-n', '--n_loops', type=int,
                         default=1,
                         help='number of training loops')
-    
+
     parser.add_argument('-b', '--backend', type=str,
                         default='numpy',
                         choices=['numpy','cupy'],
