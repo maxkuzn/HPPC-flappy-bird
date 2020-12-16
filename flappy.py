@@ -158,7 +158,6 @@ def draw_frame(env, pool, score,
 
 
 def mainGame(env, pool):
-    global fitness
     score = playerIndex = loopIter = 0
     playerIndexGen = env['playerIndexGen']
     playersXList = []
@@ -321,11 +320,11 @@ def finalize(pool):
         idx1 = -1
         idx2 = -1
         for idxx in range(pool['len']):
-            if fitness[idxx] >= parent1:
+            if normalized_fitness[idxx] >= parent1:
                 idx1 = idxx
                 break
         for idxx in range(pool['len']):
-            if fitness[idxx] >= parent2:
+            if normalized_fitness[idxx] >= parent2:
                 idx2 = idxx
                 break
         new_weights1 = model_crossover(pool, idx1, idx2)
@@ -333,8 +332,6 @@ def finalize(pool):
         updated_weights2 = model_mutate(new_weights1[1])
         new_weights.append(updated_weights1)
         new_weights.append(updated_weights2)
-    for idx in range(len(new_weights)):
-        pool['fitness'][idx] = -100
     change_weights(pool, new_weights)
 
 
@@ -391,6 +388,8 @@ def main():
     else:
         r = range(n)
     for _ in r:
+        for idx in range(len(pool['fitness'])):
+            pool['fitness'][idx] = 0
         mainGame(env, pool)
         finalize(pool)
 
