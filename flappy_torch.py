@@ -45,16 +45,15 @@ class Net(nn.Module):
         return res
 
 
-def init_pool():
+def init_pool(load_saved_pool):
     TOTAL_MODELS = 50
-    LOAD_SAVED_POOL = False
     net_dict=dict()
 
     pool = {'model': Net(n_objects = TOTAL_MODELS),
             'fitness': -100*np.ones(TOTAL_MODELS),
              'len': TOTAL_MODELS}
     # Initialize all models
-    if LOAD_SAVED_POOL:
+    if load_saved_pool:
         for ind_model in range(TOTAL_MODELS):
             pool['model'].dict_models[ind_model]['fc1'].weight.data=torch.tensor(np.load('saved_model_pool_torch/{}model_W1.npy'.format(ind_model)))
             pool['model'].dict_models[ind_model]['fc2'].weight.data=torch.tensor(np.load('saved_model_pool_torch/{}model_W2.npy'.format(ind_model)))

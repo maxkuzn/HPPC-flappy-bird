@@ -35,15 +35,14 @@ class np_mlp(object):
         return np_sigmoid(np.sum(self.W2*y, axis = 1) + self.b2)
 
 
-def init_pool():
+def init_pool(load_saved_pool):
     TOTAL_MODELS = 50
-    LOAD_SAVED_POOL = True
 
     pool = {'model': np_mlp(n_objects = TOTAL_MODELS),
             'fitness': -100*np.ones(TOTAL_MODELS),
              'len': TOTAL_MODELS}
     # Initialize all models
-    if LOAD_SAVED_POOL:
+    if load_saved_pool:
 
         pool['model'].W1 = np.load('saved_model_pool_numpy/W1.npy')
         pool['model'].W2 = np.load('saved_model_pool_numpy/W2.npy')

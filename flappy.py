@@ -334,6 +334,17 @@ def finalize(pool):
     change_weights(pool, new_weights)
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to run flappy bird')
     parser.add_argument('-n', '--n_loops', type=int,
@@ -345,21 +356,29 @@ def parse_args():
                         choices=['numpy', 'cupy', 'torch'],
                         help='what backend to use CPU/GPU')
 
+    parser.add_argument('-s', '--save', type=str2bool,
+                        default=True,
+                        help='Save updated weights or not')
+
+    parser.add_argument('-l', '--load', type=str2bool,
+                        default=True,
+                        help='Load saved weights or not')
     return parser.parse_args()
 
 def main():
     args = parse_args()
     init_backend(args.backend)
     n = args.n_loops
-    for _ in range(n):
-        env = init_pygame()
-        pool = init_pool()
-        env['SAVE_POOL'] = True
+    env = init_pygame()
+    env['SAVE_POOL'] = args.save
+    pool = init_pool(args.load)
 
+    for _ in range(n):
         mainGame(env, pool)
         finalize(pool)
-        if env['SAVE_POOL']:
-            save_pool(pool)
+
+    if env['SAVE_POOL']:
+        save_pool(pool)
 
 
 def getRandomPipe(env):
