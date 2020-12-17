@@ -63,26 +63,38 @@ def save_pool(pool):
 
 def model_crossover(pool, model_id1, model_id2):
 
-    weights1 = pool['model'].W1[model_id1]
-    weights2 = pool['model'].W1[model_id2]
+    W1_1 = pool['model'].W1[model_id1]
+    b1_1 = pool['model'].b1[model_id1]
+    W2_1 = pool['model'].W2[model_id1]
+    b2_1 = pool['model'].b2[model_id1]
 
+    W1_2 = pool['model'].W1[model_id2]
+    b1_2 = pool['model'].b1[model_id2]
+    W2_2 = pool['model'].W2[model_id2]
+    b2_2 = pool['model'].b2[model_id2]
 
-    return np.asarray([weights2, weights1])
+    # return ([W1_1, b1_1, W2_2, b2_2], [W1_2, b1_2, W2_1, b2_1])
+    return ([W1_1, b1_1, W2_1, b2_1], [W1_2, b1_2, W2_2, b2_2])
 
 
 def model_mutate(weights):
-    change = np.random.uniform(-0.5,0.5, weights.shape)
-    cond = np.random.uniform(0,1, weights.shape)
+    for i in range(4):
+        change = np.random.uniform(-0.5,0.5, weights[i].shape)
+        cond = np.random.uniform(0,1, weights[i].shape)
 
-    return np.where(cond>0.85, weights + change, weights)
+        weights[i] = np.where(cond>0.85, weights[i] + change, weights[i])
+    return weights
 
 
 def change_weights(pool, new_weights):
     for idx in range(len(new_weights)):
-        pool['model'].W1[idx] = new_weights[idx]
-        pool['model'].W2[idx] = model_mutate(pool['model'].W2[idx])
-        pool['model'].b1[idx] = model_mutate(pool['model'].b1[idx])
-        pool['model'].b2[idx] = model_mutate(pool['model'].b2[idx])
+        pool['model'].W1[idx] = new_weights[idx][0]
+        pool['model'].b1[idx] = new_weights[idx][1]
+        pool['model'].W2[idx] = new_weights[idx][2]
+        pool['model'].b2[idx] = new_weights[idx][3]
+        # pool['model'].W2[idx] = model_mutate(pool['model'].W2[idx])
+        # pool['model'].b1[idx] = model_mutate(pool['model'].b1[idx])
+        # pool['model'].b2[idx] = model_mutate(pool['model'].b2[idx])
 
 
 def predict_action(pool, height, dist, pipe_height):
