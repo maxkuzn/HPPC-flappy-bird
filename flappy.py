@@ -208,6 +208,7 @@ def mainGame(env, pool):
 
 
     while True:
+        next_pipe_x += pipeVelX
         preds = predict_action(pool, playersYList, next_pipe_x, next_pipe_hole_y)
         for idx in range(pool['len']):
             if playersYList[idx] < 0 and playersState[idx]:
